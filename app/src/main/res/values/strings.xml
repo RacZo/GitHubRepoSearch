@@ -1,0 +1,13 @@
+<resources>
+    <string name="app_name">GitHub Repo Search</string>
+
+    <string name="action_settings">Settings</string>
+    <string name="action_search">Search</string>
+
+    <string name="hint_search">Type a query for Github!</string>
+
+    <string name="label_url_display">Enter a search query and your URL will show up here!</string>
+
+
+
+</resources>
