@@ -3,17 +3,34 @@ package com.oscarsalguero.githubreposearch;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
 import android.widget.EditText;
+import android.widget.ProgressBar;
 import android.widget.TextView;
-import android.widget.Toast;
+
+import java.io.IOException;
+import java.net.URL;
+
+import okhttp3.Call;
+import okhttp3.Callback;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
 
 public class MainActivity extends AppCompatActivity {
 
-    private EditText editTextSearchBox;
-    private TextView textViewURL;
-    private TextView textViewSearchResults;
+    private static final String LOG_TAG = MainActivity.class.getName();
+
+    private EditText mEditTextSearchBox;
+    private TextView mTextViewURL;
+    private TextView mTextViewSearchResults;
+    private TextView mTextViewErrorMessage;
+    private ProgressBar mProgressBar;
+
+    private final OkHttpClient client = new OkHttpClient();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -22,9 +39,63 @@ public class MainActivity extends AppCompatActivity {
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        editTextSearchBox = (EditText) findViewById(R.id.edit_text_search_box);
-        textViewURL = (TextView) findViewById(R.id.text_view_url_display);
-        textViewSearchResults = (TextView) findViewById(R.id.text_view_search_results_json);
+        mEditTextSearchBox = (EditText) findViewById(R.id.edit_text_search_box);
+        mTextViewURL = (TextView) findViewById(R.id.text_view_url_display);
+        mTextViewSearchResults = (TextView) findViewById(R.id.text_view_search_results_json);
+        mTextViewErrorMessage = (TextView) findViewById(R.id.text_view_error_message);
+        mProgressBar = (ProgressBar) findViewById(R.id.progress_bar);
+    }
+
+    private void showErrorMessage() {
+        mTextViewErrorMessage.setVisibility(View.VISIBLE);
+        mTextViewSearchResults.setVisibility(View.INVISIBLE);
+    }
+
+    private void showJsonDataView() {
+        mTextViewErrorMessage.setVisibility(View.INVISIBLE);
+        mTextViewSearchResults.setVisibility(View.VISIBLE);
+    }
+
+
+    private void makeGithubSearchQuery() {
+        String githubQuery = mEditTextSearchBox.getText().toString();
+        URL githubSearchURL = NetworkUtils.buildUrl(githubQuery);
+        mTextViewURL.setText(githubSearchURL.toString());
+        mProgressBar.setVisibility(View.VISIBLE);
+        Request request = new Request.Builder()
+                .url(githubSearchURL.toString())
+                .build();
+        client.newCall(request).enqueue(new Callback() {
+
+            @Override
+            public void onFailure(Call call, IOException e) {
+                Log.e(LOG_TAG, "Error getting JSON response", e);
+                MainActivity.this.runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        mProgressBar.setVisibility(View.INVISIBLE);
+                        showErrorMessage();
+                    }
+                });
+            }
+
+            @Override
+            public void onResponse(Call call, Response response) throws IOException {
+                final String jsonResponse = response.body().string();
+                Log.v(LOG_TAG, "Response: " + jsonResponse);
+                if (jsonResponse != null) {
+                    MainActivity.this.runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            mProgressBar.setVisibility(View.INVISIBLE);
+                            mTextViewSearchResults.setText(jsonResponse);
+                            showJsonDataView();
+                        }
+                    });
+                }
+            }
+
+        });
 
     }
 
@@ -38,7 +109,8 @@ public class MainActivity extends AppCompatActivity {
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
         if (id == R.id.action_search) {
-            Toast.makeText(MainActivity.this, "Search clicked!", Toast.LENGTH_SHORT).show();
+            // Toast.makeText(MainActivity.this, "Search clicked!", Toast.LENGTH_SHORT).show();
+            makeGithubSearchQuery();
             return true;
         }
 

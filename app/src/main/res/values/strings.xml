@@ -8,6 +8,6 @@
 
     <string name="label_url_display">Enter a search query and your URL will show up here!</string>
 
-
+    <string name="error_message">Failed to get results. Please try again.</string>
 
 </resources>
